@@ -1,78 +1,75 @@
-import pygame
+import tkinter as tk
+from tkinter import messagebox
+from PIL import Image, ImageTk  # Import for image handling
 
-# Initialize pygame
-pygame.init()
+class RiddleGame:
+    def __init__(self):
+        self.window = tk.Tk()
+        self.window.title("Riddle Solving Game")
+        self.window.geometry("600x400")  # Set window size
+        
+        # Load background image
+        self.bg_image = Image.open("children_bg.png")  
+        self.bg_image = self.bg_image.resize((600, 400), Image.LANCZOS)  # Resize to fit window
+        self.bg_photo = ImageTk.PhotoImage(self.bg_image)
+        
+        # Create a canvas and place background image
+        self.canvas = tk.Canvas(self.window, width=600, height=400)
+        self.canvas.pack(fill="both", expand=True)
+        self.canvas.create_image(0, 0, image=self.bg_photo, anchor="nw")
 
-# Game Constants
-WIDTH, HEIGHT = 800, 600
-BALL_SPEED_X, BALL_SPEED_Y = 4, 4
-PADDLE_SPEED = 5
-WHITE = (255, 255, 255)
-BLACK = (0, 0, 0)
+        self.riddles = [
+            {"question": "What has keys but can't open locks?", "answer": "Piano", "hint": "It's a musical instrument."},
+            {"question": "What has a head, a tail, but no body?", "answer": "Coin", "hint": "You carry it in your pocket."},
+            {"question": "What comes once in a minute, twice in a moment, but never in a thousand years?", "answer": "The letter M", "hint": "It’s a letter of the alphabet."}
+        ]
+        self.current_riddle_index = 0
 
-# Create game window
-screen = pygame.display.set_mode((WIDTH, HEIGHT))
-pygame.display.set_caption("Pong Game")
+        # Create UI elements
+        self.question_label = tk.Label(self.window, text=self.riddles[self.current_riddle_index]["question"], 
+                                       font=("Arial", 14, "bold"), bg="#FFD700", fg="black", wraplength=500)
+        self.answer_entry = tk.Entry(self.window, font=("Arial", 14))
 
-# Paddle and Ball
-paddle_width, paddle_height = 10, 100
-ball_size = 10
+        self.submit_button = tk.Button(self.window, text="Submit Answer", font=("Arial", 12, "bold"), bg="lightblue", command=self.check_answer)
+        self.hint_button = tk.Button(self.window, text="Hint", font=("Arial", 12, "bold"), bg="lightgreen", command=self.show_hint)
+        self.exit_button = tk.Button(self.window, text="Exit", font=("Arial", 12, "bold"), bg="red", command=self.exit_game)
 
-# Positions
-paddle1 = pygame.Rect(30, HEIGHT//2 - paddle_height//2, paddle_width, paddle_height)
-paddle2 = pygame.Rect(WIDTH-40, HEIGHT//2 - paddle_height//2, paddle_width, paddle_height)
-ball = pygame.Rect(WIDTH//2 - ball_size//2, HEIGHT//2 - ball_size//2, ball_size, ball_size)
+        # Place widgets on canvas
+        self.canvas.create_window(300, 50, window=self.question_label)
+        self.canvas.create_window(300, 120, window=self.answer_entry, width=250, height=30)
+        self.canvas.create_window(300, 170, window=self.submit_button, width=150)
+        self.canvas.create_window(300, 220, window=self.hint_button, width=150)
+        self.canvas.create_window(300, 270, window=self.exit_button, width=150)
 
-# Ball direction
-ball_dx, ball_dy = BALL_SPEED_X, BALL_SPEED_Y
+    def check_answer(self):
+        user_answer = self.answer_entry.get().strip()
+        correct_answer = self.riddles[self.current_riddle_index]["answer"]
 
-# Game loop
-running = True
-clock = pygame.time.Clock()
+        if user_answer.lower() == correct_answer.lower():
+            messagebox.showinfo("Correct!", "That's the right answer!")
+            self.next_riddle()
+        else:
+            messagebox.showerror("Wrong Answer", "Oops! Try again.")
 
-while running:
-    screen.fill(BLACK)
-    
-    # Handle events
-    for event in pygame.event.get():
-        if event.type == pygame.QUIT:
-            running = False
+    def show_hint(self):
+        hint = self.riddles[self.current_riddle_index]["hint"]
+        messagebox.showinfo("Hint", hint)
 
-    # Player Controls
-    keys = pygame.key.get_pressed()
-    if keys[pygame.K_w] and paddle1.top > 0:
-        paddle1.y -= PADDLE_SPEED
-    if keys[pygame.K_s] and paddle1.bottom < HEIGHT:
-        paddle1.y += PADDLE_SPEED
-    if keys[pygame.K_UP] and paddle2.top > 0:
-        paddle2.y -= PADDLE_SPEED
-    if keys[pygame.K_DOWN] and paddle2.bottom < HEIGHT:
-        paddle2.y += PADDLE_SPEED
+    def next_riddle(self):
+        self.current_riddle_index += 1
+        if self.current_riddle_index < len(self.riddles):
+            self.question_label.config(text=self.riddles[self.current_riddle_index]["question"])
+            self.answer_entry.delete(0, tk.END)
+        else:
+            messagebox.showinfo("Congratulations!", "You've solved all the riddles!")
+            self.window.quit()  # Exit the game
 
-    # Ball Movement
-    ball.x += ball_dx
-    ball.y += ball_dy
+    def exit_game(self):
+        self.window.quit()  # Close the game window
 
-    # Ball collision with top/bottom walls
-    if ball.top <= 0 or ball.bottom >= HEIGHT:
-        ball_dy *= -1
+    def run(self):
+        self.window.mainloop()
 
-    # Ball collision with paddles
-    if ball.colliderect(paddle1) or ball.colliderect(paddle2):
-        ball_dx *= -1  # Reverse direction
-
-    # Ball goes out of bounds (reset position)
-    if ball.left <= 0 or ball.right >= WIDTH:
-        ball.x, ball.y = WIDTH//2 - ball_size//2, HEIGHT//2 - ball_size//2
-        ball_dx *= -1  # Restart direction
-
-    # Draw paddles and ball
-    pygame.draw.rect(screen, WHITE, paddle1)
-    pygame.draw.rect(screen, WHITE, paddle2)
-    pygame.draw.ellipse(screen, WHITE, ball)
-    pygame.draw.aaline(screen, WHITE, (WIDTH//2, 0), (WIDTH//2, HEIGHT))  # Middle line
-
-    pygame.display.flip()
-    clock.tick(60)  # Limit frame rate
-
-pygame.quit()
+# Create and start the game
+game = RiddleGame()
+game.run()
